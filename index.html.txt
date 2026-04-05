@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlowNest ✨</title>
+
+<!-- iPhone App vibe + colors -->
+<meta name="theme-color" content="#f7e6ea">
+<link rel="apple-touch-icon" href="https://via.placeholder.com/180">
+
+<style>
+/* BODY */
+body {
+margin: 0;
+font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+background: #fff;
+color: #3e2f2f;
+}
+
+/* iPhone app container */
+.container {
+max-width: 430px;
+margin: auto;
+background: white;
+min-height: 100vh;
+box-shadow: 0 0 30px rgba(0,0,0,0.1);
+position: relative;
+}
+
+/* HEADER */
+header {
+padding: 15px;
+text-align: center;
+font-size: 22px;
+font-weight: bold;
+border-bottom: 1px solid #eee;
+background: #fff;
+}
+
+/* SEARCH */
+.search {
+padding: 15px;
+}
+
+.search input {
+width: 100%;
+padding: 12px;
+border-radius: 25px;
+border: none;
+background: #f7efef;
+outline: none;
+}
+
+/* VIBE FILTERS */
+.vibes {
+display: flex;
+gap: 10px;
+padding: 10px;
+overflow-x: auto;
+}
+
+.vibe {
+padding: 8px 15px;
+border-radius: 20px;
+background: #f3e6e8;
+cursor: pointer;
+white-space: nowrap;
+font-size: 14px;
+}
+
+/* GRID */
+.grid {
+column-count: 2;
+column-gap: 10px;
+padding: 10px;
+}
+
+.card {
+background: white;
+margin-bottom: 10px;
+border-radius: 12px;
+overflow: hidden;
+position: relative;
+box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.card img {
+width: 100%;
+}
+
+/* HEART */
+.heart {
+position: absolute;
+top: 10px;
+right: 10px;
+background: white;
+padding: 5px 8px;
+border-radius: 50%;
+cursor: pointer;
+font-size: 14px;
+}
+
+/* CART ICON */
+.cart {
+position: fixed;
+top: 15px;
+right: 15px;
+background: #d88c9a;
+color: white;
+padding: 10px;
+border-radius: 50%;
+cursor: pointer;
+z-index: 1000;
+font-weight: bold;
+}
+
+/* POPUP */
+.popup {
+position: fixed;
+bottom: -100%;
+width: 100%;
+height: 80%;
+background: white;
+transition: 0.4s;
+border-radius: 20px 20px 0 0;
+padding: 20px;
+overflow-y: auto;
+z-index: 999;
+}
+
+.popup.active {
+bottom: 0;
+}
+
+.btn {
+background: #d88c9a;
+color: white;
+padding: 12px;
+border-radius: 20px;
+text-align: center;
+margin-top: 10px;
+cursor: pointer;
+}
+
+/* CART POPUP */
+#cartPopup {
+position: fixed;
+bottom: -100%;
+width: 100%;
+height: 60%;
+background: #fff;
+transition: 0.4s;
+border-radius: 20px 20px 0 0;
+padding: 20px;
+overflow-y: auto;
+z-index: 1000;
+}
+
+#cartPopup.active {
+bottom: 0;
+}
+
+/* BOTTOM NAV (iPhone vibe) */
+.nav {
+position: fixed;
+bottom: 0;
+width: 100%;
+max-width: 430px;
+display: flex;
+justify-content: space-around;
+background: white;
+border-top: 1px solid #eee;
+padding: 10px 0;
+z-index: 1000;
+}
+
+.nav div {
+text-align: center;
+font-size: 12px;
+}
+
+* { transition: all 0.25s ease; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>GlowNest ✨</header>
+
+<div class="cart" onclick="openCart()">🛒 <span id="cartCount">0</span></div>
+
+<div class="search">
+<input type="text" placeholder="Meklē produktus..." onkeyup="searchProducts(this.value)">
+</div>
+
+<div class="vibes">
+<div class="vibe" onclick="filterVibe('soft')">Soft 🎀</div>
+<div class="vibe" onclick="filterVibe('clean')">Clean 🤍</div>
+<div class="vibe" onclick="filterVibe('cozy')">Cozy 🤎</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- PRODUCT POPUP -->
+<div class="popup" id="popup">
+<div style="text-align:right; cursor:pointer;" onclick="closePopup()">✖</div>
+<img id="pimg" style="width:100%; border-radius:12px; margin-bottom:10px;">
+<h2 id="ptitle"></h2>
+<p id="pprice"></p>
+<div class="btn" onclick="addToCart()">Add to cart 🛒</div>
+</div>
+
+<!-- CART POPUP -->
+<div class="popup" id="cartPopup">
+<div style="text-align:right; cursor:pointer;" onclick="closeCart()">✖</div>
+<h2>Cart 🛒</h2>
+<div id="cartItems"></div>
+</div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="nav">
+<div>🏠<br>Home</div>
+<div>🔍<br>Search</div>
+<div>❤️<br>Saved</div>
+<div>👤<br>Profile</div>
+</div>
+
+<script>
+let products = [
+{name:"Pink Hoodie", price:"29€", vibe:"soft"},
+{name:"White Top", price:"19€", vibe:"clean"},
+{name:"Brown Sweater", price:"34€", vibe:"cozy"},
+{name:"Baby Pink Bag", price:"24€", vibe:"soft"},
+{name:"Beige Skirt", price:"27€", vibe:"clean"},
+{name:"Cozy Socks", price:"12€", vibe:"cozy"}
+];
+
+let cart = [];
+let currentProduct = null;
+
+function renderProducts(list) {
+let html = "";
+list.forEach(p => {
+html += `
+<div class="card" onclick="openProduct('${p.name}','${p.price}')">
+<div class="heart" onclick="event.stopPropagation(); saveItem('${p.name}')">❤️</div>
+<img src="https://via.placeholder.com/300">
+<div style="padding:10px">
+${p.name}<br>
+<b>${p.price}</b>
+</div>
+</div>`;
+});
+document.getElementById("grid").innerHTML = html;
+}
+
+function openProduct(name, price) {
+currentProduct = {name, price};
+document.getElementById("popup").classList.add("active");
+document.getElementById("ptitle").innerText = name;
+document.getElementById("pprice").innerText = price;
+}
+
+function closePopup() {
+document.getElementById("popup").classList.remove("active");
+}
+
+function addToCart() {
+cart.push(currentProduct);
+document.getElementById("cartCount").innerText = cart.length;
+}
+
+function openCart() {
+document.getElementById("cartPopup").classList.add("active");
+let html = "";
+cart.forEach(i => {
+html += <p>${i.name} - ${i.price}</p>;
+});
+document.getElementById("cartItems").innerHTML = html;
+}
+
+function closeCart() {
+document.getElementById("cartPopup").classList.remove("active");
+}
+
+function searchProducts(text) {
+let filtered = products.filter(p => p.name.toLowerCase().includes(text.toLowerCase()));
+renderProducts(filtered);
+}
+
+function filterVibe(vibe) {
+let filtered = products.filter(p => p.vibe === vibe);
+renderProducts(filtered);
+}
+
+function saveItem(name) {
+alert(name + " saved 💖");
+}
+
+renderProducts(products);
+</script>
+
+</body>
+</html>
